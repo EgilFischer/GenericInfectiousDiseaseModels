@@ -10,7 +10,8 @@
 
 library(dplyr)
 library(ggplot2)
-library(LambertW)
+#library(LambertW)
+
 
 ##parameters##
 animals <- 20; # (Number)
@@ -31,23 +32,44 @@ L0 <- 1 #initial exposed / latent infections (integer)
 I0 <- 0 #initial infectious animals (integer)
 
 ##simulation settings
-runs <- 3 #number of runs (integer)
+runs <- 10 #number of runs (integer)
 chop.env <- 10^-2 #environment less than 10^-10 contaminated  set to 0 (number)
 
 #initialize
-
-## initialize outputs
-output <- data.frame(time = 0, N = animals, S = animals - 1 , L =1, I =0, R=0, e = 0, D = 0, C=0, Th =0, run = 0)
-state <- output
+state <- data.frame(time = 0, 
+                     N = animals, 
+                     S = animals - 1 , 
+                     L =1, 
+                     I =0, 
+                     R=0, 
+                     e = 0, 
+                     D = 0, 
+                     C=0, 
+                     Th =0, 
+                     run = 0)
+output<- NULL
 #
-while(state$run < runs)
+while(state$run <= runs)
 {
+  
+  print(state$run)
   QIRtimes<- data.frame(Q = sort(rexp(animals - 1,1)),
                         E = dL(animals-1), 
-                        I = dI(animals-1))
-state <- data.frame(time = 0, N = animals, S = animals - 1 , L =1, I =0, R=0,e =0, D = 0, C=0, Th =0, run = last(state$run) + 1)
-first.latency <- dL(runif(1))
-events <-data.frame(type = c("LI","IR"), time = c(first.latency,first.latency + dI(runif(1))))
+                        I = dI(animals-1));
+  state <- data.frame(time = 0, 
+                      N = animals, 
+                      S = animals - 1 , 
+                      L =1, 
+                      I =0, 
+                      R=0, 
+                      e =0, 
+                      D = 0, 
+                      C=0, 
+                      Th =0, 
+                      run = last(state$run) + 1);
+  
+events <-data.frame(type = c("LI","IR"), 
+                    time = cumsum(c(dL(1), dI(1))));
 time <- 0
 foi <- 0
 cumInf <- 0
@@ -55,11 +77,11 @@ cLI <- 0
 cIR <-0
 cSL <-0
 
-handbreak =0
+# handbreak =0
 while(length(events$time) > 0 & state$L + state$I + state$e > 0 & first(state$time) < 10^10)
 {
-  handbreak = handbreak + 1
-  if(handbreak > animals){stop}
+  # handbreak = handbreak + 1
+  # if(handbreak > animals){stop}
   #order events by time of execution
   events <- events[order(events$time),]
   #update environmental contamination
@@ -67,8 +89,12 @@ while(length(events$time) > 0 & state$L + state$I + state$e > 0 & first(state$ti
   state$e <- chop.env*(floor(state$e/chop.env)) #create a possibility for the environmental contamination to die out
   #process thefirst event in the list
   #update the cummulative infection pressure
+  if(cumInf > first(QIRtimes$Q)){
+    print("error")}
+  deltat <- (first(events$time) - state$time)
   cumInf <- cumInf + 
-    (beta/decay^2) * (decay * state$e - state$I + (exp(-decay * (first(events$time) - state$time)))) * ((state$I - decay * state$e) + decay * state$I * (first(events$time) - state$time)) 
+    beta * (state$e*(1-exp(-decay*deltat))/decay) + beta*(state$I*(exp(-decay*deltat)-1+decay*deltat)/decay^2)
+    #beta * (1/decay^2) * (decay * state$e - state$I + (exp(-decay * deltat))) * ((state$I - decay * state$e) + decay * state$I * deltat) 
   
   #set time to current time
   state$time <- first(events$time)
@@ -101,8 +127,10 @@ while(length(events$time) > 0 & state$L + state$I + state$e > 0 & first(state$ti
       #subtract one from S
       state$S <- state$S - 1
       #set transitions
-      events<- rbind(events, data.frame(time =c(state$time + QIRtimes[1,]$E), type = c("LI"))) #L -> I
-      events<- rbind(events, data.frame(time =c(state$time + QIRtimes[1,]$E + QIRtimes[1,]$I), type = c("IR"))) #I -> R
+      events<- rbind(events, 
+                     data.frame(time =c(state$time + QIRtimes[1,]$E), type = c("LI"))) #L -> I
+      events<- rbind(events, 
+                     data.frame(time =c(state$time + QIRtimes[1,]$E + QIRtimes[1,]$I), type = c("IR"))) #I -> R
       
       
       #remove lowest resistance
@@ -120,21 +148,27 @@ while(length(events$time) > 0 & state$L + state$I + state$e > 0 & first(state$ti
   if(state$S > 0){
     #order events by time of execution
     events <- events[order(events$time),]
-    if(state$I ==0)
+    if(state$I ==0) # no infectious indivuals shedding
     {
+      #infection time is time + log of decaying infectivity divided b
       infection = state$time +log(1 + (decay *  (first(QIRtimes$Q) - cumInf))/(state$e * beta))/decay
     }else{
      invW <- (exp(-1 + (decay * (-decay * (first(QIRtimes$Q) - cumInf) + state$e / beta))/(state$I /beta)) * (decay *state$e - state$I))/state$I
-    if(invW < -1/exp(1) ) {  print("invW < -1/E")  
+    if(invW < -1/exp(1) ) {  print("invW < -1/E")
       print(state)
       print((first(QIRtimes$Q) - cumInf))
       }
      infection <- state$time + (1/decay) - (state$e/state$I) + decay * (first(QIRtimes$Q) - cumInf) / (beta  * state$I) +  W(invW)/decay
+      # qf <- function(t){(first(QIRtimes$Q) - cumInf)-beta*((state$I * (exp(-decay * t) - 1 + decay*t)/decay^2) +(1-exp(-decay*t))/decay )}
+      # next.infection <- uniroot(qf,c(0,10^10))$root
+      # infection <- state$time + next.infection
+      # 
+      
     }
    
   } else {infection <- 10^10}
   
- 
+  
   
   #remove first event
   events <- events[-1,]
@@ -164,6 +198,8 @@ while(length(events$time) > 0 & state$L + state$I + state$e > 0 & first(state$ti
   output <- rbind(output, state)
 }
 }
+
+
 ##plot the output
 ggplot(data = output[output$run>0, ])+
   geom_point(aes(x = time, y = L), color = "blue")+
