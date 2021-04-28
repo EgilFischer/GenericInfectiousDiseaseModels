@@ -4,6 +4,7 @@
 #                     State transitions are stochastic                          #
 #                     Environmental contamination is deterministic              #
 #                     Copy right Dr. ir. Egil A.J. Fischer                      #
+#                     e.a.j.fischer@uu.nl / egil@egilfischer.nl                                                          #
 #                                                                               #
 #################################################################################
 
@@ -12,25 +13,38 @@ library(ggplot2)
 library(LambertW)
 
 ##parameters##
-animals <- 20
-beta <- 1 #transmission coefficient from environment to individual per excretion day
-decay <- 0.001 #decay of environmental contamination
-chop.env <- 10^-2 #environment less than 10^-10 contaminated  set to 0
-dL <- function(U){return(-log(U)/0.25)} #Duration latency period as function of a random variable U
-dI <- function(U){return(-log(U)/1.5)} #Duration infectious period as function of a random variable U
-L0 <- 1
-I0 <- 0
-runs <- 3
+animals <- 20; # (Number)
+beta <- 1 #transmission coefficient from environment to individual per excretion day (time^-1)
+decay <- 0.001 #decay of environmental contamination (time^-1)
+meanL <- 0.25 #mean duration latency period (time)
+meanI <- 1.5 #mean duration of infectious period (time)
+varL <- 1; #variance duration latency period (time^2) if 1 exponential distribution
+varI <- 1; #variance duration infectious period (time^2) if 1 exponential distribution
+
+### specify distribution of periods functions
+dL <- function(n){return(rgamma(n, shape = meanL*sqrt(varL), scale = sqrt(varL/meanL))) } #Duration latency period as function of a random variable U (time)
+dI <- function(n){return(rgamma(n, shape = meanI*sqrt(varI), scale = sqrt(varI/meanI)))  } #Duration infectious period as function of a random variable U (time)
+
+
+##initial states##
+L0 <- 1 #initial exposed / latent infections (integer)
+I0 <- 0 #initial infectious animals (integer)
+
+##simulation settings
+runs <- 3 #number of runs (integer)
+chop.env <- 10^-2 #environment less than 10^-10 contaminated  set to 0 (number)
 
 #initialize
+
+## initialize outputs
 output <- data.frame(time = 0, N = animals, S = animals - 1 , L =1, I =0, R=0, e = 0, D = 0, C=0, Th =0, run = 0)
 state <- output
 #
 while(state$run < runs)
 {
   QIRtimes<- data.frame(Q = sort(rexp(animals - 1,1)),
-                        E = sapply(FUN = dL, X = runif(animals-1)), 
-                        I = sapply(FUN = dI, X = runif(animals-1)))
+                        E = dL(animals-1), 
+                        I = dI(animals-1))
 state <- data.frame(time = 0, N = animals, S = animals - 1 , L =1, I =0, R=0,e =0, D = 0, C=0, Th =0, run = last(state$run) + 1)
 first.latency <- dL(runif(1))
 events <-data.frame(type = c("LI","IR"), time = c(first.latency,first.latency + dI(runif(1))))
