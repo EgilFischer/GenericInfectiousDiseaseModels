@@ -14,7 +14,7 @@ library(LambertW)
 
 
 ##parameters##
-animals <- 20; # (Number)
+animals <- 10; # (Number)
 beta <- 1 #transmission coefficient from environment to individual per excretion day (time^-1)
 decay <- 0.1 #decay of environmental contamination (time^-1)
 meanL <- 0.25 #mean duration latency period (time)
@@ -168,7 +168,7 @@ while(length(events$time) > 0 &
                        )
           }
     }
-    print("That's all folks");
+    
     
   }
 
@@ -184,11 +184,7 @@ while(length(events$time) > 0 &
     }else{
      invW <- (exp(-1 + (decay * (-decay * (first(QIRtimes$Q) - cumInf) + state$e / beta))/(state$I /beta)) * (decay *state$e - state$I))/state$I
      infection <- state$time + (1/decay) - (state$e/state$I) + decay * (first(QIRtimes$Q) - cumInf) / (beta  * state$I) +  W(invW)/decay
-      # qf <- function(t){(first(QIRtimes$Q) - cumInf)-beta*((state$I * (exp(-decay * t) - 1 + decay*t)/decay^2) +(1-exp(-decay*t))/decay )}
-      # next.infection <- uniroot(qf,c(0,10^10))$root
-      # infection <- state$time + next.infection
-      # 
-      
+     
     }
    
   } else {infection <- 10^10}
@@ -221,7 +217,8 @@ while(length(events$time) > 0 &
   
   #record this moment
   output <- rbind(output, state)
-}
+  }
+  print("That's all folks");
 }
 
 
