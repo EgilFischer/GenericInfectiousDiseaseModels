@@ -8,9 +8,19 @@
 #                                                                               #
 #################################################################################
 
-library(dplyr)
-library(ggplot2)
-library(LambertW)
+packages <- c("dplyr","ggplot2","LambertW")
+
+## Now load or install&load all
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
 
 
 ##parameters##

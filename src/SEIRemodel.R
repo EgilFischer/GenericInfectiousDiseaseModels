@@ -7,10 +7,18 @@
 #                                                                               #
 #################################################################################
 
-library(deSolve)
-library(ggplot2)
-library(reshape2)
+packages = c("deSolve","ggplot2","reshape2")
 
+## Now load or install&load all
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
 
 # The model
 #Ordinary differential Equations

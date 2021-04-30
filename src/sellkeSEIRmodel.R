@@ -1,5 +1,17 @@
-library(dplyr)
-library(ggplot2)
+
+packages <- c("deSolve","dplyer")
+
+## Now load or install&load all
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
 
 
 ##parameters##
