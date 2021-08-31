@@ -17,17 +17,13 @@ library(network)
 ###############################################################################################
 
 #Ordinary differential Equations
-sir4 <- function(Time, State, Pars){
+sir2 <- function(Time, State, Pars){
  with(as.list(c(State,Pars)),{
-  dy1 <- (n1 - y1 -z1) * (beta11 * (y1 / n1) +beta21 * (y2 / n2) + beta31 * (y3 /n3) + beta41 * (y4 / n4)) - gamma1 * y1 #change in infections for species 1
-  dy2 <- (n2 - y2 -z2) * (beta12 * (y1 / n1) +beta22 * (y2 / n2) + beta32 * (y3 /n3) + beta42 * (y4 / n4))- gamma2 * y2 #change in infections for species 2
-  dy3 <- (n3 - y3 -z3) * (beta13 * (y1 / n1) +beta23 * (y2 / n2) + beta33 * (y3 /n3) + beta43 * (y4 / n4))- gamma3 * y3 #change in infections for species 3
-   dy4 <- (n4 - y4 -z4) * (beta14 * (y1 / n1) +beta24 * (y2 / n2) + beta34 * (y3 /n3) + beta44 * (y4 / n4))- gamma4 * y4 #change in infections for species 4
-   dz1 <- gamma1 * y1
-   dz2 <- gamma2 * y2
-   dz3 <- gamma3 * y3
-   dz4 <- gamma4 * y4
-  return(list(c(dy1,dy2,dy3,dy4,dz1,dz2,dz3,dz4 )))
+  dy1 <- (n1 - y1 -z1) * (beta11 * (y1 / n1) +beta21 * (y2 / n2)) - gamma1 * y1 #change in infections for species 1
+  dy2 <- (n2 - y2 -z2) * (beta12 * (y1 / n1) +beta22 * (y2 / n2))- gamma2 * y2 #change in infections for species 2
+  dz1 <- gamma1 * y1
+  dz2 <- gamma2 * y2
+  return(list(c(dy1,dy2,dz1,dz2)))
  })
 }
 
@@ -35,80 +31,65 @@ sir4 <- function(Time, State, Pars){
 #          Parameters                              #
 ####################################################
 pars <- c(#beta = transmission rates between species
-          beta11 = 0.9, 
-          beta12 = 0.2, #transmission constant from species 1 to 2
-          beta13 = 0.0, #transmission constant from species 1 to 3
-          beta14 = 0.0, #etc.
-          beta21 = 0.0, 
-          beta22 = 0.8, 
-          beta23 = 0.2, 
-          beta24 = 0.0, 
-          beta31 = 0.0, 
-          beta32 = 0.0, 
-          beta33 = 0.7, 
-          beta34 = 0.2, 
-          beta41 = 0.5, 
-          beta42 = 0.0, 
-          beta43 = 0.0, 
-          beta44 = 0.6, 
+          beta11 = 0.8, 
+          beta12 = 0.3, #transmission constant from species 1 to 2
+          beta21 = 0.2, 
+          beta22 = 0.5, 
           #recovery rates
           gamma1 = 1 ,# recovery of species 1 = 1/duration of infection
-          gamma2 = 1 ,
-          gamma3 = 1 ,
-          gamma4 = 1 
+          gamma2 = 2 
           )
 
 #population sizes
 n1 = 2500
 n2 = 2500
-n3 = 2500
-n4 = 2500
 
 #initial infections
 y1_0 = 1
 y2_0 = 0
-y3_0 = 0
-y4_0 = 0
 init <- c(y1 = y1_0,
           y2 = y2_0,
-          y3 = y3_0,
-          y4 = y4_0,
-          z1 =0, z2 =0, z3=0, z4=0)
+          z1 =0, 
+          z2 =0)
 
 ##summary of the parameter settings
 #if transmission is only within the same species the basic reproduction numbers are:
 pars["beta11"]/pars["gamma1"]
 pars["beta22"]/pars["gamma2"]
-pars["beta33"]/pars["gamma3"]
-pars["beta44"]/pars["gamma4"]
 
 #R0 of the complete system
-NGM <- matrix(pars[1:16],nrow = 4) / pars[17:20] #next generation matrix i.e. how many new infections in each species caused by each of the species in the next generations
+NGM <- matrix(pars[1:4],nrow = 2) / pars[5:6] #next generation matrix i.e. how many new infections in each species caused by each of the species in the next generations
 ev<- eigen(NGM) #calculate the eigenvalues and eigenvectors of the next generation matrix
 max(Re(ev$values)) #the largest is R0
+#directly solvable for 2x2 NGM
+0.5*(pars[1]/pars["gamma1"]+pars[4]/pars["gamma2"]+sqrt(diff(pars[c(1,4)]/pars[c("gamma1","gamma2")])^2+4*prod(pars[c(2,3)]/pars[c("gamma1","gamma2")])))
 
-#Plot infection connectivity between species
-connect.matrix =matrix(pars[1:16],nrow = 4)
-dimnames(connect.matrix)= list(1:4,1:4);
-c.m.network <- network(connect.matrix,directed =TRUE,
-                       loops = TRUE,
-                       matrix.type = "adjacency")
-network.vertex.names(c.m.network) <- paste("Species",1:4)
-plot(c.m.network,
-     label = network.vertex.names(c.m.network),
-     usearrows = TRUE
-     )
+#plot K22  for which R0 > 1
+k22 <- function(k11,k21xk12){ifelse(k11<1,1-(k21xk12)/(1-k11),NA)}
+rangek21xK12 = c(0.001,0.01,0.1,0.5,.9);
+k11seq = seq(0,2,0.001)
+ggplot(data = data.frame(k11 = rep(k11seq,length(rangek21xK12)),
+                         k22 = (mapply(FUN =k22,rep(k11seq,length(rangek21xK12)),
+                                        rep(rangek21xK12,each = length(k11seq)))),
+                         k21xK12 = rep(rangek21xK12,each = length(k11seq))))+
+  geom_path(aes(x,y),data = data.frame(x = c(0,2),y = c(1,1)))+
+  geom_path(aes(y,x),data = data.frame(x = c(0,2),y = c(1,1)))+
+  scale_x_continuous(expand = c(0,0),limits = c(0,2))+
+  scale_y_continuous(expand = c(0,0),limits = c(0,2))+
+  geom_path(aes(k11,k22,colour = factor(k21xK12)))+
+  labs(color = "k21 x K12", x = "K11",y = "K22")  +
+  theme_bw()
 
 #############################################
 #       simulation                          #
 #############################################
 #Data storage time
 dt = 0.1#timestep for storing data
-times <- seq(0, 250, by = dt)
+times <- seq(0, 100, by = dt)
 
 
 #Solve the ordinary differential equations
-ode.out <- ode(init, times, sir4,pars) 
+ode.out <- ode(init, times, sir2,pars) 
 #plot infection against time
 plot.data = melt(data.frame(ode.out), id = c("time")) #create plottable data
 plot.data$species = substr(plot.data$variable,2,2) #variable indicating the species
