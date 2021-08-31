@@ -23,7 +23,7 @@ pars <- c(beta = 1.25, #beta = transmission rate
           )
 #Data storage time
 dt = 0.1#timestep for storing data
-times <- seq(0, 50, by = dt)
+times <- seq(0, 25, by = dt)
 
 #initial values
 y0 = 0.01 #initial fraction infected 
@@ -31,13 +31,28 @@ z0 = 0# initial fraction recovered,
 x0 = 1 - y0 - z0
 init <- c(x = x0,y = y0,z = z0)
 
+#determine the peak prevalence
+peak.prevalence.sir <- function(pars, y0, z0){
+   x0 = 1-y0-z0;
+   return(y0 + x0 + (pars["gamma"]/pars["beta"]) * log(x0) -     (pars["gamma"]/pars["beta"])*(1- log(pars["gamma"]/pars["beta"])) )
+}
+peak.prevalence.sir(pars,0.0,0.1)
+
 #Solve the ordinary differential equations
 ode.out <- ode(init, times, sir,pars) 
 #plot x, y, and z against time
 plot(x = ode.out[,1], y = ode.out[,2], type = "l", xlab = "time", ylab = "proportion", col = "purple",lwd =2)
 lines(x = ode.out[,1], y = ode.out[,3], type = "l", xlab = "time", ylab = "proportion", col = "red",lwd =2)
 lines(x = ode.out[,1], y = ode.out[,4], type = "l", xlab = "time", ylab = "proportion", col = "palegreen1",lwd =2)
-legend(x = 40, y = 0.4, c("x","y","z"),,lwd =2, col = c("purple", "red", "palegreen1"))
+legend(x = 40, y = 0.4, c("x","y","z"),lwd =2, col = c("purple", "red", "palegreen1"))
+#plot the reproduction number
+plot(x = ode.out[,1], y = ode.out[,2]*(pars["beta"]/pars["gamma"]),type = "l", xlab = "time",ylab = "Re")
+abline(h= 1)
+
+plot(x = 1-ode.out[,2], y = ode.out[,2]*(pars["beta"]/pars["gamma"]),type = "l", xlab = "1-x",ylab = "Re")
+abline(h= 1,v = (1-pars["gamma"]/pars["beta"]))
+
+
 #plot  x against y
 plot(x = ode.out[,2], y = ode.out[,3], type = "l", xlab ="x", ylab ="y")
 s <- seq(length(ode.out[,2])-1)
