@@ -4,11 +4,8 @@ This project contains R-scripts for SIR type models and extensions.
 ## File structure
 ```
 .
-└──TransmissionAnalysis
-	├── src
-	│   ├── Deprecated
-    │   ├── R
-    │   └── Stan
+└──GenericInfectiousDiseaseModels
+    ├── src
     ├── output
     ├── data
     ├── README.md
