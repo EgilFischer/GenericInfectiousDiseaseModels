@@ -1,5 +1,6 @@
-
-packages <- c("deSolve","dplyer")
+# 
+ packages <- c("ggplot2","dplyr")
+ 
 
 ## Now load or install&load all
 package.check <- lapply(
@@ -15,32 +16,41 @@ package.check <- lapply(
 
 
 ##parameters##
-animals <- 100
+animals <- 100 #population size
 beta <- 0.2 #transmission coefficient
 dL <- function(U){return(-log(U)/0.5)} #Duration latency period as function of a random variable U
 dI <- function(U){return(-log(U)/0.1)} #Duration infectious period as function of a random variable U
-L0 <- 1
-I0 <- 0
-runs <- 5
-#initialize
+L0 <- 1 #number of initially latently infected 
+I0 <- 0 #number of initially infectious
+runs <- 5 #number of runs
 
+#initialize
 output <- data.frame(time = 0, N = animals, S = animals - 1 , L =1, I =0, R=0, D = 0, C=0, Th =0, run = 0)
 state <- output
-#
+
+#loop over number of runs
 while(state$run < runs)
 {
+  #get for every animal the infection threshold Q, the length of the latent period and length of infectious period
   QIRtimes<- data.frame(Q = sort(rexp(animals - 1,1)),
                         E = sapply(FUN = dL, X = runif(animals-1)), 
                         I = sapply(FUN = dI, X = runif(animals-1)))
+  
+  #set state of the system with initial values
 state <- data.frame(time = 0, N = animals, S = animals - 1 , L =1, I =0, R=0, D = 0, C=0, Th =0, run = last(state$run) + 1)
+ #initialize event list
 events <-data.frame(type = c("LI","IR"), time = c(dL(runif(1)),dI(runif(1))))
-time <- 0
-foi <- 0
-cumInf <- 0
-cLI <- 0
-cIR <-0
-cSL <-0
+#set initial values 
+time <- 0 #time
+foi <- 0  #force of infection
+cumInf <- 0 #cumulative force of infection
 
+#counters for output/debugging not necessary for running the simulations
+cLI <- 0 #counter for latent to infectious transitions
+cIR <-0  #counter for infectious to recover transitions
+cSL <-0 #counter for susceptible to latent transitions
+
+#set manual 'handbreak' that prevents endless loops
 handbreak =0
 while(length(events$time) > 0 & state$L + state$I > 0)
 {
@@ -117,7 +127,9 @@ while(length(events$time) > 0 & state$L + state$I > 0)
 }
 ##plot the output
 ggplot(data = output)+
-  geom_point(aes(x = time, y = L), color = "blue")+
-  geom_point(aes(x = time, y = I), color = "red")+
-  geom_point(aes(x = time, y = R), color = "black")
+  geom_path(aes(x = time, y = L, group = run), color = "blue")+
+  geom_path(aes(x = time, y = I, group = run), color = "red")+
+  geom_path(aes(x = time, y = R, group = run), color = "black")+
+  ylab("L,I,R")
+  
 output

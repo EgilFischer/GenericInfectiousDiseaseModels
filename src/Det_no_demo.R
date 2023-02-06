@@ -18,9 +18,11 @@ sir <- function(Time, State, Pars){
 }
 
 #Parameters
-pars <- c(beta = 1.25, #beta = transmission rate
-          gamma = 0.25 #gamma = recovery rate
+pars <- c(beta = 1, #beta = transmission rate
+          gamma = 0.5 #gamma = recovery rate
           )
+#calculate R0
+pars["beta"]/pars["gamma"]
 #Data storage time
 dt = 0.1#timestep for storing data
 times <- seq(0, 25, by = dt)
@@ -36,12 +38,13 @@ peak.prevalence.sir <- function(pars, y0, z0){
    x0 = 1-y0-z0;
    return(y0 + x0 + (pars["gamma"]/pars["beta"]) * log(x0) -     (pars["gamma"]/pars["beta"])*(1- log(pars["gamma"]/pars["beta"])) )
 }
-peak.prevalence.sir(pars,0.0,0.1)
+peak.prevalence.sir(pars,0.0,0.0)
+
 
 #Solve the ordinary differential equations
 ode.out <- ode(init, times, sir,pars) 
 #plot x, y, and z against time
-plot(x = ode.out[,1], y = ode.out[,2], type = "l", xlab = "time", ylab = "proportion", col = "purple",lwd =2)
+plot(x = ode.out[,1], y = ode.out[,2], type = "l", xlab = "time", ylab = "proportion", col = "purple",lwd =2,ylim = c(0,1.0))
 lines(x = ode.out[,1], y = ode.out[,3], type = "l", xlab = "time", ylab = "proportion", col = "red",lwd =2)
 lines(x = ode.out[,1], y = ode.out[,4], type = "l", xlab = "time", ylab = "proportion", col = "palegreen1",lwd =2)
 legend(x = 40, y = 0.4, c("x","y","z"),lwd =2, col = c("purple", "red", "palegreen1"))
