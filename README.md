@@ -6,12 +6,6 @@ This project contains R-scripts for SIR type models and extensions.
 .
 └──GenericInfectiousDiseaseModels
     ├── src
-    |    ├── [](src/Det_SIR.R)
-    |    ├── output
-    |    ├── output
-    |    ├── output
-    |    ├── output
-    |    └──  output
     ├── output
     ├── data
     ├── README.md
@@ -19,6 +13,10 @@ This project contains R-scripts for SIR type models and extensions.
     ├── CITATION.md
     └── .gitignore
 ```
+## Models
+The src folder contains 
+* deterministic SIR models with and without demography, an SEIR model with environmental transmission and SIR models with 2 and 4 species without demography. 
+* stochastic SEIR model and SEIR model with environmental transmission 
     
 ## License
 
