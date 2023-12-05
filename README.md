@@ -6,6 +6,12 @@ This project contains R-scripts for SIR type models and extensions.
 .
 └──GenericInfectiousDiseaseModels
     ├── src
+    |    ├── [](src/Det_SIR.R)
+    |    ├── output
+    |    ├── output
+    |    ├── output
+    |    ├── output
+    |    └──  output
     ├── output
     ├── data
     ├── README.md
